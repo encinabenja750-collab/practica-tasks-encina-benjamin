@@ -1,8 +1,16 @@
-import { User } from "../models/user.model.js";
+import { UserModel } from "../models/user.model.js";
+import { TaskModel } from "../models/task.model.js";
 
 export const obtenerUsuarios = async (req, res) => {
   try {
-    const usuarios = await User.findAll();
+    const usuarios = await UserModel.findAll({
+      include: {
+        model: TaskModel,
+        as: "tareas",
+        attributes: ["id", "title", "description", "is_completed"],
+      },
+      attributes: ["id", "name", "email"],
+    });
     return res.status(200).json({ data: usuarios });
   } catch (error) {
     console.error(error);
@@ -35,14 +43,16 @@ export const crearUsuario = async (req, res) => {
   }
 
   try {
-    const usuarioExistente = await User.findOne({ where: { email: email } });
+    const usuarioExistente = await UserModel.findOne({
+      where: { email: email },
+    });
     if (usuarioExistente) {
       return res
         .status(400)
         .json({ message: "El correo electrónico ya está registrado." });
     }
 
-    const nuevoUsuario = await User.create({
+    const nuevoUsuario = await UserModel.create({
       name,
       email,
       password,
@@ -64,7 +74,14 @@ export const crearUsuario = async (req, res) => {
 export const obtenerUsuarioId = async (req, res) => {
   const { id } = req.params;
   try {
-    const usuario = await User.findByPk(id);
+    const usuario = await UserModel.findByPk(id, {
+      include: {
+        model: TaskModel,
+        as: "tareas",
+        attributes: ["id", "title", "description", "is_completed"],
+      },
+      attributes: ["id", "name", "email"],
+    });
     if (!usuario) {
       return res
         .status(404)
@@ -105,14 +122,14 @@ export const actualizarUsuarioId = async (req, res) => {
     });
   }
   try {
-    const usuario = await User.findByPk(id);
+    const usuario = await UserModel.findByPk(id);
     if (!usuario) {
       return res
         .status(404)
         .json({ message: "El usuario que intenta actualizar no existe" });
     }
     if (email && email.trim() !== usuario.email.trim()) {
-      const emailRepetido = await User.findOne({
+      const emailRepetido = await UserModel.findOne({
         where: { email: email.trim() },
       });
       if (emailRepetido) {
@@ -143,7 +160,7 @@ export const actualizarUsuarioId = async (req, res) => {
 export const eliminarUsuario = async (req, res) => {
   const { id } = req.params;
   try {
-    const usuario = await User.findByPk(id);
+    const usuario = await UserModel.findByPk(id);
     if (!usuario) {
       return res.status(404).json({
         message: "No se puede eliminar porque el usuario no existe",

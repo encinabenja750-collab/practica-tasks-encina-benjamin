@@ -1,8 +1,15 @@
-import { Task } from "../models/task.model.js";
+import { TaskModel } from "../models/task.model.js";
+import { UserModel } from "../models/user.model.js";
 
 export const obtenerTareas = async (req, res) => {
   try {
-    const tasks = await Task.findAll();
+    const tasks = await TaskModel.findAll({
+      include: {
+        model: UserModel,
+        as: "author",
+        attributes: ["id", "name", "email"],
+      },
+    });
     return res.status(200).json({ data: tasks });
   } catch (error) {
     console.error(error);
@@ -14,7 +21,7 @@ export const obtenerTareas = async (req, res) => {
 };
 
 export const crearTarea = async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, user_id } = req.body;
   if (!title || title.trim() === "" || title.lenght > 100) {
     return res.status(400).json({
       message: "El título es obligatorio y debe tener máximo 100 carácteres.",
@@ -26,16 +33,29 @@ export const crearTarea = async (req, res) => {
         "La descripción es obligatoria y debe tener un máximo de 100 carácteres.",
     });
   }
+  if (!user_id) {
+    return res.status(400).json({
+      message:
+        "El campo user_id es obligatorio para asociar la tarea a un usuario",
+    });
+  }
   try {
-    const tareaExistente = await Task.findOne({ where: { title: title } });
+    const usuarioExiste = await UserModel.findByPk(user_id);
+    if (!usuarioExiste) {
+      return res
+        .status(404)
+        .json({ message: "El usuario especificado no existe en el sistema." });
+    }
+    const tareaExistente = await TaskModel.findOne({ where: { title: title } });
     if (tareaExistente) {
       return res
         .status(400)
         .json({ message: "Ya existe una tarea con este nombre." });
     }
-    const nuevaTarea = await Task.create({
+    const nuevaTarea = await TaskModel.create({
       title,
       description,
+      user_id,
     });
     return res.status(201).json({
       message: "Tarea añadida con éxito.",
@@ -52,7 +72,13 @@ export const crearTarea = async (req, res) => {
 export const obtenerTareaId = async (req, res) => {
   const { id } = req.params;
   try {
-    const task = await Task.findByPk(id);
+    const task = await TaskModel.findByPk(id, {
+      include: {
+        model: UserModel,
+        as: "author",
+        attributes: ["id", "name", "email"],
+      },
+    });
     if (!task) {
       return res.status(404).json({
         message: "La tarea solicitada no existe.",
