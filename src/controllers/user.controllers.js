@@ -1,5 +1,6 @@
 import { UserModel } from "../models/user.model.js";
 import { TaskModel } from "../models/task.model.js";
+import { PersonModel } from "../models/person.model.js";
 
 export const obtenerUsuarios = async (req, res) => {
   try {
@@ -22,7 +23,7 @@ export const obtenerUsuarios = async (req, res) => {
 };
 
 export const crearUsuario = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, person_id } = req.body;
 
   if (!name || name.trim() === "" || name.length > 100) {
     return res.status(400).json({
@@ -42,24 +43,38 @@ export const crearUsuario = async (req, res) => {
     });
   }
 
-  try {
-    const usuarioExistente = await UserModel.findOne({
-      where: { email: email },
+  if (!person_id) {
+    return res.status(400).json({
+      message: "El campo person_id es obligatorio para crear un usuario",
     });
-    if (usuarioExistente) {
+  }
+
+  try {
+    const personaExistente = await PersonModel.findByPk(person_id);
+    if (!personaExistente) {
       return res
         .status(400)
-        .json({ message: "El correo electrónico ya está registrado." });
+        .json({ message: "La persona especificada no existe en el sistema" });
     }
 
+    const personaOcupada = await UserModel.findOne({where: {person_id}});
+    if (personaOcupada) {
+      return res.status(400).json({message: "Esta persona ya tiene una cuenta de usuario vinculada"});
+    }
+
+    const emailExistente = await UserModel.findOne({where: {email: email.trim()}});
+    if (emailExistente) {
+      return res.status(400).json({message: "El correo electrónico ya está registrado"});
+    }
     const nuevoUsuario = await UserModel.create({
       name,
-      email,
+      email: email.trim(),
       password,
+      person_id
     });
 
     return res.status(201).json({
-      message: "Usuario creado con éxito.",
+      message: "Usuario creado con éxito y vinculado a la persona.",
       data: nuevoUsuario,
     });
   } catch (error) {
