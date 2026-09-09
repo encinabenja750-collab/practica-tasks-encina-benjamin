@@ -25,52 +25,12 @@ export const obtenerUsuarios = async (req, res) => {
 export const crearUsuario = async (req, res) => {
   const { name, email, password, person_id } = req.body;
 
-  if (!name || name.trim() === "" || name.length > 100) {
-    return res.status(400).json({
-      message: "Tiene que escribir algo y que no supere los 100 carácteres",
-    });
-  }
-
-  if (!email || email.trim() === "" || email.length > 100) {
-    return res.status(400).json({
-      message: "El correo electrónico es obligatorio y máximo 100 carácteres",
-    });
-  }
-
-  if (!password || password.trim() === "" || password.length > 100) {
-    return res.status(400).json({
-      message: "La contraseña es obligatoria y de máximo 100 carácteres",
-    });
-  }
-
-  if (!person_id) {
-    return res.status(400).json({
-      message: "El campo person_id es obligatorio para crear un usuario",
-    });
-  }
-
   try {
-    const personaExistente = await PersonModel.findByPk(person_id);
-    if (!personaExistente) {
-      return res
-        .status(400)
-        .json({ message: "La persona especificada no existe en el sistema" });
-    }
-
-    const personaOcupada = await UserModel.findOne({where: {person_id}});
-    if (personaOcupada) {
-      return res.status(400).json({message: "Esta persona ya tiene una cuenta de usuario vinculada"});
-    }
-
-    const emailExistente = await UserModel.findOne({where: {email: email.trim()}});
-    if (emailExistente) {
-      return res.status(400).json({message: "El correo electrónico ya está registrado"});
-    }
     const nuevoUsuario = await UserModel.create({
       name,
       email: email.trim(),
       password,
-      person_id
+      person_id,
     });
 
     return res.status(201).json({

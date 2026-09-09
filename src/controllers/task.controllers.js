@@ -22,36 +22,8 @@ export const obtenerTareas = async (req, res) => {
 
 export const crearTarea = async (req, res) => {
   const { title, description, user_id } = req.body;
-  if (!title || title.trim() === "" || title.lenght > 100) {
-    return res.status(400).json({
-      message: "El título es obligatorio y debe tener máximo 100 carácteres.",
-    });
-  }
-  if (!description || description.trim() === "" || description.lenght > 100) {
-    return res.status(400).json({
-      message:
-        "La descripción es obligatoria y debe tener un máximo de 100 carácteres.",
-    });
-  }
-  if (!user_id) {
-    return res.status(400).json({
-      message:
-        "El campo user_id es obligatorio para asociar la tarea a un usuario",
-    });
-  }
+
   try {
-    const usuarioExiste = await UserModel.findByPk(user_id);
-    if (!usuarioExiste) {
-      return res
-        .status(404)
-        .json({ message: "El usuario especificado no existe en el sistema." });
-    }
-    const tareaExistente = await TaskModel.findOne({ where: { title: title } });
-    if (tareaExistente) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe una tarea con este nombre." });
-    }
     const nuevaTarea = await TaskModel.create({
       title,
       description,
